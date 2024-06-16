@@ -1,0 +1,13 @@
+<html>
+  <head> </head>
+  <body>
+    <h1>Notify Sever</h1>
+    <script type="text/javascript">
+      // SSE Client
+      var source = new EventSource("/events");
+      source.onmessage = function (event) {
+        console.log(event.data);
+      };
+    </script>
+  </body>
+</html>
