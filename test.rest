@@ -1,2 +1,27 @@
-###
-GET http://localhost:6688/api/chat
+### signup user
+POST http://127.0.0.1:6688/api/signup
+Content-Type: application/json
+
+{
+    "email": "manonloki@gmail.com",
+    "fullname":"Manon Loki",
+    "password": "loki1988"
+}
+
+### signin user
+POST http://127.0.0.1:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "manonloki@gmail.com",
+    "password": "loki1988"
+}
+
+### signin user with wrong account
+POST http://127.0.0.1:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "manonloki@163.com",
+    "password": "loki1988"
+}

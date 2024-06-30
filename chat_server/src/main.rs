@@ -24,7 +24,7 @@ async fn main() -> Result<()> {
 
     let addr = format!("0.0.0.0:{}", port);
 
-    let app = get_router(config);
+    let app = get_router(config).await?;
 
     let listener = TcpListener::bind(&addr).await?;
     info!("Listening on: {}", addr);
