@@ -8,14 +8,7 @@ Content-Type: application/json
     "password": "loki1988"
 }
 
-### signin user
-POST http://127.0.0.1:6688/api/signin
-Content-Type: application/json
 
-{
-    "email": "manonloki@gmail.com",
-    "password": "loki1988"
-}
 
 ### signin user with wrong account
 POST http://127.0.0.1:6688/api/signin
@@ -25,3 +18,19 @@ Content-Type: application/json
     "email": "manonloki@163.com",
     "password": "loki1988"
 }
+
+### signin user
+# @name signin
+POST http://127.0.0.1:6688/api/signin
+Content-Type: application/json
+
+{
+    "email": "manonloki@gmail.com",
+    "password": "loki1988"
+}
+
+@auth_token = {{signin.response.body.token}}
+
+### get chat list
+GET http://127.0.0.1:6688/api/chat
+Authorization: Bearer {{auth_token}}
