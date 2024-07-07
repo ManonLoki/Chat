@@ -8,20 +8,24 @@ use serde::{Deserialize, Serialize};
 
 use crate::{AppError, User};
 
+use super::Workspace;
+
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateUser {
     pub fullname: String,
     pub email: String,
     pub password: String,
+    pub workspace: String,
 }
 
 #[cfg(test)]
 impl CreateUser {
-    pub fn new(fullname: &str, email: &str, password: &str) -> Self {
+    pub fn new(workspace: &str, fullname: &str, email: &str, password: &str) -> Self {
         Self {
             fullname: fullname.to_string(),
             email: email.to_string(),
             password: password.to_string(),
+            workspace: workspace.to_string(),
         }
     }
 }
@@ -44,41 +48,72 @@ impl SigninUser {
 
 impl User {
     pub async fn find_by_email(email: &str, pool: &sqlx::PgPool) -> Result<Option<Self>, AppError> {
-        let user =
-            sqlx::query_as(r#"SELECT id,fullname,email,created_at FROM users WHERE email=$1"#)
-                .bind(email)
-                .fetch_optional(pool)
-                .await?;
+        let user = sqlx::query_as(
+            r#"SELECT id,ws_id,fullname,email,created_at FROM users WHERE email=$1"#,
+        )
+        .bind(email)
+        .fetch_optional(pool)
+        .await?;
 
         Ok(user)
     }
     /// Create a new user
     pub async fn create(input: &CreateUser, pool: &sqlx::PgPool) -> Result<Self, AppError> {
-        let password_hash = hash_password(&input.password)?;
-
         let user = Self::find_by_email(&input.email, pool).await?;
         if user.is_some() {
             return Err(AppError::EmailAlreadyExists(input.email.clone()));
         }
 
-        let user = sqlx::query_as(
+        let ws = match Workspace::find_by_name(&input.workspace, pool).await? {
+            Some(ws) => ws,
+            None => Workspace::create(&input.workspace, 0, pool).await?,
+        };
+
+        let password_hash = hash_password(&input.password)?;
+        let user: User = sqlx::query_as(
             r#"
-                INSERT INTO users (email,fullname,password_hash)
-                VALUES ($1,$2,$3)
-                RETURNING id,fullname,email,created_at
+                INSERT INTO users (ws_id,email,fullname,password_hash)
+                VALUES ($1,$2,$3,$4)
+                RETURNING id,ws_id,fullname,email,created_at
             "#,
         )
+        .bind(ws.id)
         .bind(&input.email)
         .bind(&input.fullname)
         .bind(password_hash)
         .fetch_one(pool)
         .await?;
+
+        if ws.owner_id == 0 {
+            ws.update_owner(user.id as u64, pool).await?;
+        }
+
         Ok(user)
     }
+
+    pub async fn add_to_workspace(
+        &self,
+        workspace_id: u64,
+        pool: &sqlx::PgPool,
+    ) -> Result<Self, AppError> {
+        let user = sqlx::query_as(
+            r#"
+                UPDATE users SET ws_id=$1 WHERE id=$2 AND ws_id=0
+                RETURNING id,ws_id,fullname,email,created_at
+            "#,
+        )
+        .bind(self.id)
+        .bind(workspace_id as i64)
+        .fetch_one(pool)
+        .await?;
+
+        Ok(user)
+    }
+
     /// Verify email and password
     pub async fn verify(input: &SigninUser, pool: &sqlx::PgPool) -> Result<Option<Self>, AppError> {
         let user: Option<User> = sqlx::query_as(
-            r#"SELECT id,fullname,email,created_at,password_hash FROM users WHERE email=$1"#,
+            r#"SELECT id,ws_id,fullname,email,created_at,password_hash FROM users WHERE email=$1"#,
         )
         .bind(&input.email)
         .fetch_optional(pool)
@@ -150,7 +185,7 @@ mod tests {
 
         let pool = tdb.get_pool().await;
 
-        let input = CreateUser::new("manonloki@gmail.com", "Manon Loki", "loki1988");
+        let input = CreateUser::new("test", "manonloki@gmail.com", "Manon Loki", "loki1988");
         let user = User::create(&input, &pool).await?;
 
         assert_eq!(user.email, input.email);

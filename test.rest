@@ -3,6 +3,7 @@ POST http://127.0.0.1:6688/api/signup
 Content-Type: application/json
 
 {
+    "workspace":"angularust",
     "email": "manonloki@gmail.com",
     "fullname":"Manon Loki",
     "password": "loki1988"
@@ -33,4 +34,8 @@ Content-Type: application/json
 
 ### get chat list
 GET http://127.0.0.1:6688/api/chat
+Authorization: Bearer {{auth_token}}
+
+### get chat users list
+GET http://127.0.0.1:6688/api/users
 Authorization: Bearer {{auth_token}}
