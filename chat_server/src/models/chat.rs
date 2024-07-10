@@ -1,11 +1,10 @@
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
+use sqlx::{PgPool, Postgres, QueryBuilder};
 
 use crate::AppError;
 
 use super::{Chat, ChatType, ChatUser};
 
-#[allow(dead_code)]
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CreateChat {
     pub name: Option<String>,
@@ -13,7 +12,12 @@ pub struct CreateChat {
     pub public: bool,
 }
 
-#[allow(dead_code)]
+#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+pub struct UpdateChat {
+    pub name: Option<String>,
+    pub members: Option<Vec<i64>>,
+}
+
 impl Chat {
     pub async fn create(
         input: CreateChat,
@@ -100,6 +104,50 @@ impl Chat {
 
         Ok(chat)
     }
+
+    pub async fn update_by_id(id: u64, input: UpdateChat, pool: &PgPool) -> Result<(), AppError> {
+        // 校验参数是否有效
+        if input.name.is_none() && input.members.is_none() {
+            return Err(AppError::NotChange(
+                "At least one field must be provided".to_string(),
+            ));
+        }
+
+        let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new("UPDATE chats SET ");
+        let mut first_field = true;
+
+        if let Some(name) = input.name {
+            if !first_field {
+                query_builder.push(",");
+            }
+            query_builder.push(" name =").push_bind(name);
+            first_field = false;
+        }
+
+        if let Some(members) = input.members {
+            if !first_field {
+                query_builder.push(",");
+            }
+            query_builder.push(" members =").push_bind(members.clone());
+        }
+
+        query_builder.push(" WHERE id =").push_bind(id as i64);
+
+        let query = query_builder.build();
+
+        query.execute(pool).await?;
+
+        Ok(())
+    }
+
+    pub async fn delete_by_id(id: u64, pool: &PgPool) -> Result<(), AppError> {
+        sqlx::query("DELETE FROM chats WHERE id=$1")
+            .bind(id as i64)
+            .execute(pool)
+            .await?;
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -171,5 +219,23 @@ mod tests {
 
         let chats = Chat::fetch_all(1, &pool).await.expect("chat fetch failed");
         assert_eq!(chats.len(), 4);
+    }
+
+    #[tokio::test]
+    async fn chat_update_by_id_should_work() -> anyhow::Result<()> {
+        let (_tdb, pool) = get_test_pool(None).await;
+
+        let input = UpdateChat {
+            name: Some("new name".to_string()),
+            members: Some(vec![1, 2, 3]),
+        };
+
+        Chat::update_by_id(1, input, &pool).await?;
+
+        let chat = Chat::get_by_id(1, &pool).await?.expect("chat not found");
+        assert_eq!(chat.name.unwrap(), "new name");
+        assert_eq!(chat.members.len(), 3);
+
+        Ok(())
     }
 }

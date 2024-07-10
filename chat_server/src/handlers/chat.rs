@@ -6,7 +6,7 @@ use axum::{
 };
 
 use crate::{
-    models::{Chat, CreateChat},
+    models::{Chat, CreateChat, UpdateChat},
     AppError, AppState, User,
 };
 
@@ -38,10 +38,20 @@ pub(crate) async fn get_chat_handler(
     }
 }
 
-pub(crate) async fn update_chat_handler() -> impl IntoResponse {
-    "update chat"
+pub(crate) async fn update_chat_handler(
+    State(state): State<AppState>,
+    Path(id): Path<u64>,
+    Json(input): Json<UpdateChat>,
+) -> Result<impl IntoResponse, AppError> {
+    Chat::update_by_id(id, input, &state.pool).await?;
+
+    Ok(StatusCode::OK)
 }
 
-pub(crate) async fn delete_chat_handler() -> impl IntoResponse {
-    "delete chat"
+pub(crate) async fn delete_chat_handler(
+    State(state): State<AppState>,
+    Path(id): Path<u64>,
+) -> Result<impl IntoResponse, AppError> {
+    Chat::delete_by_id(id as _, &state.pool).await?;
+    Ok(StatusCode::OK)
 }

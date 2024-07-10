@@ -25,6 +25,8 @@ pub enum AppError {
 
     #[error("not found {0}")]
     NotFound(String),
+    #[error("not change {0}")]
+    NotChange(String),
 }
 
 impl IntoResponse for AppError {
@@ -37,6 +39,7 @@ impl IntoResponse for AppError {
             AppError::EmailAlreadyExists(_) => StatusCode::CONFLICT,
             AppError::CreateChatError(_) => StatusCode::BAD_REQUEST,
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
+            AppError::NotChange(_) => StatusCode::UNPROCESSABLE_ENTITY,
         };
 
         (status, Json(json!({"error":self.to_string()}))).into_response()
