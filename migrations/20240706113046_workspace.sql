@@ -13,6 +13,10 @@ CREATE TABLE workspaces (
 ALTER TABLE users
 ADD COLUMN ws_id BIGINT REFERENCES workspaces(id);
 
+--Alter chats table to add ws_id
+ALTER TABLE chats
+ADD COLUMN ws_id BIGINT REFERENCES workspaces(id);
+
 BEGIN;
 -- create fake super user
 INSERT INTO users(id,fullname,email,password_hash)

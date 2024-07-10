@@ -56,7 +56,7 @@ mod tests {
 
         let (_tdb, state) = AppState::new_for_test(config).await?;
 
-        let input = CreateUser::new("test", "Manonloki", "manonloki@gmail.com", "loki1988");
+        let input = CreateUser::new("acme", "Manonloki3", "manonloki3@gmail.com", "loki1988");
         let response = signup_handler(State(state), Json(input))
             .await?
             .into_response();
@@ -74,10 +74,7 @@ mod tests {
 
         let (_tdb, state) = AppState::new_for_test(config).await?;
 
-        let input = CreateUser::new("test", "Alice", "alice@acme.org", "alice1988");
-        User::create(&input, &state.pool).await?;
-
-        let input = SigninUser::new("alice@acme.org", "alice1988");
+        let input = SigninUser::new("manonloki@gmail.com", "loki1988");
         let response = signin_handler(State(state), Json(input))
             .await?
             .into_response();

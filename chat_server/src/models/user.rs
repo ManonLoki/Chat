@@ -160,11 +160,11 @@ fn verify_password(password: &str, password_hash: &str) -> Result<bool, AppError
 
 #[cfg(test)]
 mod tests {
-    use std::path::Path;
+
+    use crate::test_util::get_test_pool;
 
     use super::*;
     use anyhow::Result;
-    use sqlx_db_tester::TestPg;
 
     #[test]
     fn hash_password_and_verify_should_work() -> Result<()> {
@@ -178,14 +178,9 @@ mod tests {
     #[tokio::test]
     async fn create_and_verify_user_should_work() -> Result<()> {
         // Test goes here
-        let tdb = TestPg::new(
-            "postgres://postgres:880914@localhost:5432".to_string(),
-            Path::new("../migrations"),
-        );
+        let (_tdb, pool) = get_test_pool(None).await;
 
-        let pool = tdb.get_pool().await;
-
-        let input = CreateUser::new("test", "manonloki@gmail.com", "Manon Loki", "loki1988");
+        let input = CreateUser::new("test", "manonloki2@gmail.com", "Manon Loki2", "loki1988");
         let user = User::create(&input, &pool).await?;
 
         assert_eq!(user.email, input.email);

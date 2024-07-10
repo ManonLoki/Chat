@@ -91,31 +91,59 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
 }
 
 #[cfg(test)]
-impl AppState {
-    pub async fn new_for_test(
-        config: AppConfig,
-    ) -> Result<(sqlx_db_tester::TestPg, Self), AppError> {
-        let ek = EncodingKey::load(&config.auth.sk).context("load sk failed")?;
-        let dk = DecodingKey::load(&config.auth.pk).context("load pk failed")?;
+mod test_util {
+    use std::path::Path;
 
-        let last_index = config.server.db_url.rfind('/').unwrap();
-        let server_url = &config.server.db_url[..last_index];
+    use super::*;
 
-        println!("server_url next: {}", server_url);
-        let tdb = sqlx_db_tester::TestPg::new(
-            server_url.to_string(),
-            std::path::Path::new("../migrations"),
-        );
+    use sqlx::Executor;
+    use sqlx::PgPool;
+    use sqlx_db_tester::TestPg;
+
+    impl AppState {
+        pub async fn new_for_test(config: AppConfig) -> Result<(TestPg, Self), AppError> {
+            let ek = EncodingKey::load(&config.auth.sk).context("load sk failed")?;
+            let dk = DecodingKey::load(&config.auth.pk).context("load pk failed")?;
+
+            let last_index = config.server.db_url.rfind('/').unwrap();
+            let server_url = &config.server.db_url[..last_index];
+
+            println!("server_url next: {}", server_url);
+            let (tdb, pool) = get_test_pool(Some(server_url)).await;
+
+            let state = Self {
+                inner: Arc::new(AppStateInner {
+                    config,
+                    ek,
+                    dk,
+                    pool,
+                }),
+            };
+            Ok((tdb, state))
+        }
+    }
+
+    pub async fn get_test_pool(url: Option<&str>) -> (TestPg, PgPool) {
+        let url = url.unwrap_or("postgres://postgres:880914@localhost:5432/");
+
+        let tdb = TestPg::new(url.to_string(), Path::new("../migrations"));
+
         let pool = tdb.get_pool().await;
 
-        let state = Self {
-            inner: Arc::new(AppStateInner {
-                config,
-                ek,
-                dk,
-                pool,
-            }),
-        };
-        Ok((tdb, state))
+        let sql = include_str!("../fixtures/test.sql").split(';');
+
+        let mut ts = pool.begin().await.expect("begin transaction failed");
+
+        for s in sql {
+            if s.trim().is_empty() {
+                continue;
+            }
+
+            ts.execute(s).await.expect("execute failed");
+        }
+
+        ts.commit().await.expect("commit failed");
+
+        (tdb, pool)
     }
 }
