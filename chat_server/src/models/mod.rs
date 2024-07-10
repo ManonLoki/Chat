@@ -2,10 +2,12 @@ mod chat;
 mod user;
 mod workspace;
 
+pub use chat::CreateChat;
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
 pub use user::{CreateUser, SigninUser};
+
 #[derive(Debug, Clone, FromRow, Serialize, Deserialize, PartialEq)]
 pub struct User {
     pub id: i64,
@@ -50,7 +52,7 @@ pub struct Chat {
     pub name: Option<String>,
     pub r#type: ChatType,
     pub members: Vec<i64>,
-    pub crated_at: DateTime<Utc>,
+    pub created_at: DateTime<Utc>,
 }
 
 #[cfg(test)]
