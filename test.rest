@@ -39,3 +39,25 @@ Authorization: Bearer {{auth_token}}
 ### get chat users list
 GET http://127.0.0.1:6688/api/users
 Authorization: Bearer {{auth_token}}
+
+### upload files
+POST http://127.0.0.1:6688/api/upload
+Authorization: Bearer {{auth_token}}
+Content-Type: multipart/form-data; boundary=MyBoundary
+
+--MyBoundary
+Content-Disposition: form-data; filename="avatar.png"
+Content-Type: application/octet-stream
+
+< /Users/manonloki/Documents/study/rust-camp/chat/avatar.png
+--MyBoundary
+Content-Disposition: form-data; filename="README.md"
+Content-Type: text/plain
+
+Hello World!
+
+--MyBoundary--
+
+### download files
+GET http://127.0.0.1:6688/api/files/1/f75/640/ffdf8d0683cb49cccaf377073930af7904.png
+Authorization: Bearer {{auth_token}}

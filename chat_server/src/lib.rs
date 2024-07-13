@@ -79,6 +79,8 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
                 .post(send_message_handler),
         )
         .route("/chats/:id/messages", get(list_message_handler))
+        .route("/upload", post(upload_handler))
+        .route("/files/:ws_id/*path", get(file_handler))
         .layer(from_fn_with_state(state.clone(), verify_token))
         .route("/signin", post(signin_handler))
         .route("/signup", post(signup_handler));
@@ -103,6 +105,9 @@ mod test_util {
 
     impl AppState {
         pub async fn new_for_test(config: AppConfig) -> Result<(TestPg, Self), AppError> {
+            println!("config: {:?}", config);
+            tokio::fs::create_dir_all(&config.server.base_dir).await?;
+            println!("created");
             let ek = EncodingKey::load(&config.auth.sk).context("load sk failed")?;
             let dk = DecodingKey::load(&config.auth.pk).context("load pk failed")?;
 

@@ -27,6 +27,12 @@ pub enum AppError {
     NotFound(String),
     #[error("not change {0}")]
     NotChange(String),
+
+    #[error("io error:{0}")]
+    IoError(#[from] tokio::io::Error),
+
+    #[error("unauthorized")]
+    Unauthorized,
 }
 
 impl IntoResponse for AppError {
@@ -40,6 +46,8 @@ impl IntoResponse for AppError {
             AppError::CreateChatError(_) => StatusCode::BAD_REQUEST,
             AppError::NotFound(_) => StatusCode::NOT_FOUND,
             AppError::NotChange(_) => StatusCode::UNPROCESSABLE_ENTITY,
+            AppError::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
+            AppError::Unauthorized => StatusCode::UNAUTHORIZED,
         };
 
         (status, Json(json!({"error":self.to_string()}))).into_response()
