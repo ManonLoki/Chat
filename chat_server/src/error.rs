@@ -33,6 +33,12 @@ pub enum AppError {
 
     #[error("unauthorized")]
     Unauthorized,
+
+    #[error("create message error:{0}")]
+    CreateMessageError(String),
+
+    #[error("chat file error:{0}")]
+    ChatFileError(String),
 }
 
 impl IntoResponse for AppError {
@@ -48,6 +54,8 @@ impl IntoResponse for AppError {
             AppError::NotChange(_) => StatusCode::UNPROCESSABLE_ENTITY,
             AppError::IoError(_) => StatusCode::INTERNAL_SERVER_ERROR,
             AppError::Unauthorized => StatusCode::UNAUTHORIZED,
+            AppError::CreateMessageError(_) => StatusCode::BAD_REQUEST,
+            AppError::ChatFileError(_) => StatusCode::BAD_REQUEST,
         };
 
         (status, Json(json!({"error":self.to_string()}))).into_response()

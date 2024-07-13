@@ -24,8 +24,8 @@ pub(crate) async fn upload_handler(
     State(state): State<AppState>,
     mut multipart: Multipart,
 ) -> Result<impl IntoResponse, AppError> {
-    let ws_id = user.ws_id;
-    let base_dir = &state.config.server.base_dir.join(ws_id.to_string());
+    let ws_id = user.ws_id as u64;
+    let base_dir = &state.config.server.base_dir;
     let mut files = vec![];
     while let Some(field) = multipart.next_field().await.expect("read error") {
         let filename = field.file_name().map(|name| name.to_string());
@@ -35,7 +35,7 @@ pub(crate) async fn upload_handler(
             continue;
         };
 
-        let file = ChatFile::new(&filename, &data);
+        let file = ChatFile::new(ws_id, &filename, &data);
         let path = file.path(base_dir);
         if path.exists() {
             info!("file already exists")
@@ -44,7 +44,7 @@ pub(crate) async fn upload_handler(
 
             tokio::fs::write(path, data).await?;
 
-            files.push(file.url(ws_id as u64))
+            files.push(file.url())
         }
     }
     Ok(Json(files))

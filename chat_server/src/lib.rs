@@ -104,7 +104,8 @@ mod test_util {
     use sqlx_db_tester::TestPg;
 
     impl AppState {
-        pub async fn new_for_test(config: AppConfig) -> Result<(TestPg, Self), AppError> {
+        pub async fn new_for_test() -> Result<(TestPg, Self), AppError> {
+            let config = AppConfig::load().context("load config failed")?;
             println!("config: {:?}", config);
             tokio::fs::create_dir_all(&config.server.base_dir).await?;
             println!("created");

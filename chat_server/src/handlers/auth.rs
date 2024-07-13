@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     models::{CreateUser, SigninUser},
-    AppError, AppState, User,
+    AppError, AppState,
 };
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -15,11 +15,8 @@ pub(crate) async fn signup_handler(
     State(state): State<AppState>,
     Json(input): Json<CreateUser>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = User::create(&input, &state.pool).await?;
+    let user = state.create_user(&input).await?;
     let token = state.ek.sign(user)?;
-    // let mut header = HeaderMap::new();
-    // header.insert("X-Token", token.parse()?);
-    // Ok((StatusCode::CREATED, header))
 
     let output = AuthOutput { token };
 
@@ -30,7 +27,7 @@ pub(crate) async fn signin_handler(
     State(state): State<AppState>,
     Json(input): Json<SigninUser>,
 ) -> Result<impl IntoResponse, AppError> {
-    let user = User::verify(&input, &state.pool).await?;
+    let user = state.verify_user(&input).await?;
     match user {
         Some(user) => {
             let token = state.ek.sign(user)?;
@@ -44,7 +41,6 @@ pub(crate) async fn signin_handler(
 
 #[cfg(test)]
 mod tests {
-    use crate::AppConfig;
 
     use super::*;
     use anyhow::Result;
@@ -52,9 +48,7 @@ mod tests {
 
     #[tokio::test]
     async fn signin_up_should_work() -> Result<()> {
-        let config = AppConfig::load()?;
-
-        let (_tdb, state) = AppState::new_for_test(config).await?;
+        let (_tdb, state) = AppState::new_for_test().await?;
 
         let input = CreateUser::new("acme", "Manonloki3", "manonloki3@gmail.com", "loki1988");
         let response = signup_handler(State(state), Json(input))
@@ -70,9 +64,7 @@ mod tests {
 
     #[tokio::test]
     async fn signin_should_work() -> Result<()> {
-        let config = AppConfig::load()?;
-
-        let (_tdb, state) = AppState::new_for_test(config).await?;
+        let (_tdb, state) = AppState::new_for_test().await?;
 
         let input = SigninUser::new("manonloki@gmail.com", "loki1988");
         let response = signin_handler(State(state), Json(input))
