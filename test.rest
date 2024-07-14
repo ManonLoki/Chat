@@ -61,3 +61,17 @@ Hello World!
 ### download files
 GET http://127.0.0.1:6688/api/files/1/f75/640/ffdf8d0683cb49cccaf377073930af7904.png
 Authorization: Bearer {{auth_token}}
+
+### send message
+POST http://127.0.0.1:6688/api/chats/1
+Authorization: Bearer {{auth_token}}
+Content-Type: application/json
+
+{
+    "content": "Hello World!",
+    "files":[]
+}
+
+### get messages
+GET http://127.0.0.1:6688/api/chats/1/messages
+Authorization: Bearer {{auth_token}}

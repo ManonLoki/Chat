@@ -1,11 +1,12 @@
 mod chat;
 mod file;
-mod messages;
+mod message;
 mod user;
 mod workspace;
 
 pub use chat::{CreateChat, UpdateChat};
 use chrono::{DateTime, Utc};
+pub use message::{CreateMessage, ListMessages};
 use serde::{Deserialize, Serialize};
 use sqlx::prelude::*;
 pub use user::{CreateUser, SigninUser};
@@ -68,7 +69,7 @@ pub struct ChatFile {
 pub struct Message {
     pub id: i64,
     pub chat_id: i64,
-    pub user_id: i64,
+    pub sender_id: i64,
     pub content: String,
     pub files: Vec<String>,
     pub created_at: DateTime<Utc>,

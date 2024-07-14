@@ -25,3 +25,28 @@ INSERT INTO chats(ws_id,type,members)
 VALUES
 (1, 'single', '{1,2}'),
 (1, 'group', '{1,3,4}');
+
+
+
+
+CREATE TABLE IF NOT EXISTS messages(
+    id BIGSERIAL PRIMARY KEY,
+    chat_id BIGINT NOT NULL  REFERENCES chats(id),
+    sender_id BIGINT NOT NULL REFERENCES users(id),
+    content TEXT NOT NULL,
+    files TEXT[],
+    created_at TIMESTAMPTZ DEFAULT CURRENT_TIMESTAMP
+);
+-- insert messages 10 messages for each chat
+INSERT INTO messages(chat_id,sender_id,content)
+VALUES
+(1,1,'hello'),
+(1,1,'hi'),
+(1,1,'hey'),
+(1,1,'yo'),
+(1,1,'sup'),
+(1,1,'oh'),
+(1,1,'ha'),
+(1,1,'you'),
+(1,1,'nin'),
+(1,1,'san');

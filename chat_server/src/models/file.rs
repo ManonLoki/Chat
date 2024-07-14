@@ -1,4 +1,9 @@
-use std::path::{Path, PathBuf};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
+
+use crate::AppError;
 
 use super::ChatFile;
 use sha1::{Digest, Sha1};
@@ -26,6 +31,43 @@ impl ChatFile {
         let (part2, part3) = part2.split_at(3);
 
         format!("{}/{}/{}/{}.{}", self.ws_id, part1, part2, part3, self.ext)
+    }
+}
+
+impl FromStr for ChatFile {
+    type Err = AppError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        let Some(s) = s.strip_prefix("/files/") else {
+            return Err(AppError::ChatFileError(format!(
+                "invalid chat file path:{}",
+                s
+            )));
+        };
+        println!("s:{}", s);
+        let parts: Vec<&str> = s.split('/').collect();
+        println!("parts:{:?}", parts);
+        if parts.len() != 4 {
+            return Err(AppError::ChatFileError(format!(
+                "invalid chat file path:{}",
+                s
+            )));
+        }
+        let Ok(ws_id) = parts[0].parse::<u64>() else {
+            return Err(AppError::ChatFileError("invalid ws_id".to_string()));
+        };
+
+        let Some((part3, ext)) = parts[3].split_once('.') else {
+            return Err(AppError::ChatFileError("invalid file name".to_string()));
+        };
+
+        let hash = format!("{}{}{}", parts[1], parts[2], part3);
+
+        Ok(Self {
+            ws_id,
+            ext: ext.to_string(),
+            hash,
+        })
     }
 }
 

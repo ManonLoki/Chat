@@ -1,11 +1,9 @@
-use std::str::FromStr;
-
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, QueryBuilder};
 
 use crate::{AppError, AppState};
 
-use super::{Chat, ChatFile, ChatType};
+use super::{Chat, ChatType};
 
 #[derive(Debug, Clone, Default, Serialize, Deserialize)]
 pub struct CreateChat {
@@ -147,37 +145,21 @@ impl AppState {
 
         Ok(())
     }
-}
 
-impl FromStr for ChatFile {
-    type Err = AppError;
+    pub async fn is_chat_member(&self, chat_id: u64, user_id: u64) -> Result<bool, AppError> {
+        let row = sqlx::query(
+            r#"
+                SELECT 1
+                FROM chats
+                WHERE id=$1 AND $2 = ANY(members)
+            "#,
+        )
+        .bind(chat_id as i64)
+        .bind(user_id as i64)
+        .fetch_optional(&self.pool)
+        .await?;
 
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        let Some(s) = s.strip_prefix("/files/") else {
-            return Err(AppError::ChatFileError("invalid file path".to_string()));
-        };
-
-        let parts: Vec<&str> = s.split('/').collect();
-        if parts.len() != 4 {
-            return Err(AppError::ChatFileError(
-                "File path does not valid".to_string(),
-            ));
-        }
-        let Ok(ws_id) = parts[10].parse::<u64>() else {
-            return Err(AppError::ChatFileError("invalid ws_id".to_string()));
-        };
-
-        let Some((part3, ext)) = parts[3].split_once('.') else {
-            return Err(AppError::ChatFileError("invalid file name".to_string()));
-        };
-
-        let hash = format!("{}{}{}", parts[1], parts[2], part3);
-
-        Ok(Self {
-            ws_id,
-            ext: ext.to_string(),
-            hash,
-        })
+        Ok(row.is_some())
     }
 }
 
@@ -272,6 +254,19 @@ mod tests {
         let chat = state.get_chat_by_id(1).await?.expect("chat not found");
         assert_eq!(chat.name.unwrap(), "new name");
         assert_eq!(chat.members.len(), 3);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn chat_is_member_should_work() -> anyhow::Result<()> {
+        let (_tdb, state) = AppState::new_for_test().await?;
+
+        let is_member = state.is_chat_member(1, 1).await?;
+        assert!(is_member);
+
+        let is_member = state.is_chat_member(1, 6).await?;
+        assert!(!is_member);
 
         Ok(())
     }

@@ -1,9 +1,11 @@
 mod auth;
+mod chat;
 mod request_id;
 mod server_time;
 
 pub use auth::verify_token;
 use axum::{middleware::from_fn, Router};
+pub use chat::verify_chat;
 use server_time::ServerTimeLayer;
 use tower::ServiceBuilder;
 use tower_http::{
