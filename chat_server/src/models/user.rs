@@ -5,11 +5,10 @@ use argon2::{
     Argon2, PasswordVerifier,
 };
 use serde::{Deserialize, Serialize};
-use sqlx::PgPool;
 
-use crate::{AppError, AppState, User};
+use crate::{AppError, AppState};
 
-use super::ChatUser;
+use chat_core::{ChatUser, User};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CreateUser {
@@ -86,7 +85,8 @@ impl AppState {
         .await?;
 
         if ws.owner_id == 0 {
-            ws.update_owner(user.id as u64, &self.pool).await?;
+            self.update_workspace_owner(ws.id as u64, user.id as u64)
+                .await?;
         }
 
         Ok(user)
@@ -123,27 +123,6 @@ impl AppState {
                 .bind(id as i64)
                 .fetch_optional(&self.pool)
                 .await?;
-
-        Ok(user)
-    }
-}
-
-impl User {
-    pub async fn add_to_workspace(
-        &self,
-        workspace_id: u64,
-        pool: &PgPool,
-    ) -> Result<Self, AppError> {
-        let user = sqlx::query_as(
-            r#"
-                UPDATE users SET ws_id=$1 WHERE id=$2 AND ws_id=0
-                RETURNING id,ws_id,fullname,email,created_at
-            "#,
-        )
-        .bind(self.id)
-        .bind(workspace_id as i64)
-        .fetch_one(pool)
-        .await?;
 
         Ok(user)
     }

@@ -337,9 +337,9 @@ dependencies = [
 
 [[package]]
 name = "boring"
-version = "4.7.0"
+version = "4.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "8449eece48f398076facde2688c79b81e23e93cd4a21d52564025d8d3517fbce"
+checksum = "49cec514676e157e536114aa62faed6656243629920bb620a7b391268988cc4d"
 dependencies = [
  "bitflags 2.5.0",
  "boring-sys",
@@ -350,9 +350,9 @@ dependencies = [
 
 [[package]]
 name = "boring-sys"
-version = "4.7.0"
+version = "4.8.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "b1d573e041bd65f156c72e32233c5ff68dcb5d995e119928c9b36ce338f2401c"
+checksum = "beae676330def914eea531b62375bb026e89cc2266498f44688cae5164eb2ebd"
 dependencies = [
  "bindgen",
  "cmake",
@@ -426,13 +426,31 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "baf1de4339761588bc0619e3cbc0120ee582ebb74b53b4efbf79117bd2da40fd"
 
 [[package]]
+name = "chat_core"
+version = "0.1.0"
+dependencies = [
+ "anyhow",
+ "axum",
+ "axum-extra",
+ "chrono",
+ "jwt-simple",
+ "serde",
+ "sqlx",
+ "tokio",
+ "tower",
+ "tower-http",
+ "tracing",
+ "uuid",
+]
+
+[[package]]
 name = "chat_server"
 version = "0.1.0"
 dependencies = [
  "anyhow",
  "argon2",
  "axum",
- "axum-extra",
+ "chat_core",
  "chrono",
  "hex",
  "http-body-util",
@@ -451,7 +469,6 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
- "uuid",
 ]
 
 [[package]]
@@ -1626,6 +1643,7 @@ dependencies = [
  "anyhow",
  "axum",
  "axum-extra",
+ "chat_core",
  "futures",
  "serde",
  "serde_yaml",

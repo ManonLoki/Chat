@@ -1,8 +1,6 @@
-use sqlx::PgPool;
-
 use crate::{AppError, AppState};
 
-use super::Workspace;
+use chat_core::Workspace;
 
 impl AppState {
     /// Create a new workspace
@@ -40,10 +38,12 @@ impl AppState {
 
         Ok(ws)
     }
-}
 
-impl Workspace {
-    pub async fn update_owner(&self, owner_id: u64, pool: &PgPool) -> Result<Self, AppError> {
+    pub async fn update_workspace_owner(
+        &self,
+        id: u64,
+        owner_id: u64,
+    ) -> Result<Workspace, AppError> {
         let ws = sqlx::query_as(
             r#"
                 UPDATE workspaces SET owner_id=$1 WHERE id=$2 AND  (SELECT ws_id from users WHERE id = $1) = $2
@@ -52,8 +52,8 @@ impl Workspace {
         )
 
         .bind(owner_id as i64)
-        .bind(self.id )
-        .fetch_one(pool)
+        .bind(id as i64 )
+        .fetch_one(&self.pool)
         .await?;
 
         Ok(ws)
@@ -75,7 +75,9 @@ mod tests {
         let input = CreateUser::new(&ws.name, "manonloki1", "manonloki1@gmail.com", "test");
         let user = state.create_user(&input).await?;
 
-        let ws = ws.update_owner(user.id as u64, &state.pool).await?;
+        let ws = state
+            .update_workspace_owner(ws.id as _, user.id as _)
+            .await?;
         assert_eq!(ws.name, "test");
         assert_eq!(ws.id, user.ws_id);
         assert_eq!(ws.owner_id, user.id);

@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{models::ChatFile, AppError, AppState};
 
-use super::Message;
+use chat_core::Message;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct CreateMessage {
