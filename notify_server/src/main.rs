@@ -22,9 +22,9 @@ async fn main() -> Result<()> {
 
     let addr = format!("0.0.0.0:{}", 6687);
 
-    let app = get_router();
+    let (app, state) = get_router();
 
-    setup_pg_listener().await?;
+    setup_pg_listener(state).await?;
 
     let listener = TcpListener::bind(&addr).await?;
     info!("Listening on: {}", addr);
