@@ -3,11 +3,18 @@
   <body>
     <h1>Notify Sever</h1>
     <script type="text/javascript">
-      // SSE Client
-      var source = new EventSource("/events");
+      let token =
+        "eyJhbGciOiJFZERTQSIsInR5cCI6IkpXVCJ9.eyJpYXQiOjE3MjE1MzAwMDYsImV4cCI6MTcyMjEzNDgwNiwibmJmIjoxNzIxNTMwMDA2LCJpc3MiOiJjaGF0X3NlcnZlciIsImF1ZCI6ImNoYXRfY2xpZW50IiwiaWQiOjEsIndzX2lkIjoxLCJmdWxsbmFtZSI6Ik1hbm9uIExva2kiLCJlbWFpbCI6Im1hbm9ubG9raUBnbWFpbC5jb20iLCJjcmVhdGVkX2F0IjoiMjAyNC0wNy0yMVQwMjo0Njo0My4yNTI3NTdaIn0.goxCEMm6IbCsBgb2JKGkALV2elS7iR_pPMx1MMw0ERCO5SzpVVyn--ck4aerXYCtzv7w1Rcu6IVgohzSW5bDAA";
+      let url = `/events?access_token=${token}`;
+      var source = new EventSource(url);
       source.onmessage = function (event) {
         console.log(event.data);
       };
+
+      source.addEventListener("NewChat", console.log);
+      source.addEventListener("AddToChat", console.log);
+      source.addEventListener("RemoveFromChat", console.log);
+      source.addEventListener("NewMessage", console.log);
     </script>
   </body>
 </html>

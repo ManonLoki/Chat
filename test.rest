@@ -11,15 +11,6 @@ Content-Type: application/json
 
 
 
-### signin user with wrong account
-POST http://127.0.0.1:6688/api/signin
-Content-Type: application/json
-
-{
-    "email": "manonloki@163.com",
-    "password": "loki1988"
-}
-
 ### signin user
 # @name signin
 POST http://127.0.0.1:6688/api/signin
