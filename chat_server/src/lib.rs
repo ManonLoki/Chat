@@ -22,11 +22,11 @@ use axum::{
 pub use config::AppConfig;
 
 #[derive(Debug, Clone)]
-pub(crate) struct AppState {
+pub struct AppState {
     inner: Arc<AppStateInner>,
 }
-#[allow(unused)]
-pub(crate) struct AppStateInner {
+
+pub struct AppStateInner {
     pub(crate) config: AppConfig,
     pub(crate) ek: EncodingKey,
     pub(crate) dk: DecodingKey,
@@ -75,9 +75,7 @@ impl Debug for AppStateInner {
     }
 }
 
-pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
-    let state = AppState::try_new(config).await?;
-
+pub async fn get_router(state: AppState) -> Result<Router, AppError> {
     let chat = Router::new()
         .route(
             "/:id",
@@ -87,8 +85,8 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
                 .post(send_message_handler),
         )
         .route("/:id/messages", get(list_message_handler))
-        .route("/", get(list_chat_handler).post(create_chat_handler))
-        .layer(from_fn_with_state(state.clone(), verify_chat));
+        .layer(from_fn_with_state(state.clone(), verify_chat))
+        .route("/", get(list_chat_handler).post(create_chat_handler));
 
     let api = Router::new()
         .route("/users", get(list_chat_users_handler))
@@ -107,7 +105,7 @@ pub async fn get_router(config: AppConfig) -> Result<Router, AppError> {
     Ok(set_layer(app))
 }
 
-#[cfg(test)]
+#[cfg(feature = "test-util")]
 mod test_util {
     use std::path::Path;
 

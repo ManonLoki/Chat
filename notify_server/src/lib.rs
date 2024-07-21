@@ -12,7 +12,7 @@ use chat_core::{
     utils::DecodingKey,
 };
 
-use config::AppConfig;
+pub use config::AppConfig;
 use dashmap::DashMap;
 
 pub use notify::{setup_pg_listener, AppEvent};
@@ -59,10 +59,10 @@ impl TokenVerify for AppState {
     }
 }
 
-pub fn get_router() -> (Router, AppState) {
-    let config = AppConfig::load().expect("Failed to load config");
-
+pub async fn get_router(config: AppConfig) -> anyhow::Result<Router> {
     let state = AppState::new(config);
+
+    setup_pg_listener(state.clone()).await?;
 
     let router = Router::new()
         .route("/events", get(sse_handler))
@@ -70,7 +70,7 @@ pub fn get_router() -> (Router, AppState) {
         .route("/", get(index_handler))
         .with_state(state.clone());
 
-    (router, state)
+    Ok(router)
 }
 
 async fn index_handler() -> impl IntoResponse {

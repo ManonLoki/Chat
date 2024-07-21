@@ -36,10 +36,11 @@ mod tests {
 
     use super::*;
     use anyhow::Result;
-    use axum::{body::Body, middleware::from_fn_with_state, routing::get, Router};
+    use axum::{
+        body::Body, http::StatusCode, middleware::from_fn_with_state, routing::get, Router,
+    };
 
     use chat_core::middlewares::verify_token;
-    use hyper::StatusCode;
     use tower::ServiceExt;
 
     async fn handler(_req: Request) -> impl IntoResponse {
