@@ -10,15 +10,17 @@ use crate::{
     AppError, AppState, User,
 };
 
+/// 获取所有聊天室
 #[utoipa::path(
     get,
     path = "/api/chats",
     responses(
-        (status = 200, description = "List of chats", body = Vec<Chat>),
+        (status = 200, description = "List of all chats", body = Vec<Chat>),
     ),
     security(
         ("token" = [])
-    )
+    ),
+    tag = "chat"
 )]
 pub(crate) async fn list_chat_handler(
     Extension(user): Extension<User>,
@@ -27,6 +29,8 @@ pub(crate) async fn list_chat_handler(
     let chats = state.fetch_all_chat(user.ws_id as _).await?;
     Ok((StatusCode::OK, Json(chats)))
 }
+
+/// 创建聊天室
 #[utoipa::path(
     post,
     path = "/api/chats",
@@ -35,7 +39,8 @@ pub(crate) async fn list_chat_handler(
     ),
     security(
         ("token" = [])
-    )
+    ),
+    tag = "chat"
 )]
 pub(crate) async fn create_chat_handler(
     Extension(user): Extension<User>,
@@ -46,11 +51,12 @@ pub(crate) async fn create_chat_handler(
     Ok((StatusCode::CREATED, Json(chat)))
 }
 
+/// 根据ID获取聊天室
 #[utoipa::path(
     get,
     path = "/api/chats/{id}",
     params(
-        ("id" = u64, Path, description = "Chat id")
+        ("id" = u64, Path, description = "Get Chat Detail By ID")
     ),
     responses(
         (status = 200, description = "Chat found", body = Chat),
@@ -58,7 +64,8 @@ pub(crate) async fn create_chat_handler(
     ),
     security(
         ("token" = [])
-    )
+    ),
+    tag = "chat"
 )]
 pub(crate) async fn get_chat_handler(
     State(state): State<AppState>,
@@ -71,6 +78,18 @@ pub(crate) async fn get_chat_handler(
     }
 }
 
+/// 更新聊天室信息
+#[utoipa::path(
+    patch,
+    path = "/api/chats/{id}",
+    responses(
+        (status = 200, description = "Update Chat Info"),
+    ),
+    security(
+        ("token" = [])
+    ),
+    tag = "chat"
+)]
 pub(crate) async fn update_chat_handler(
     State(state): State<AppState>,
     Path(id): Path<u64>,
@@ -81,6 +100,18 @@ pub(crate) async fn update_chat_handler(
     Ok(StatusCode::OK)
 }
 
+/// 删除聊天室
+#[utoipa::path(
+    delete,
+    path = "/api/chats/{id}",
+    responses(
+        (status = 200, description = "Remove Chat"),
+    ),
+    security(
+        ("token" = [])
+    ),
+    tag = "chat"
+)]
 pub(crate) async fn delete_chat_handler(
     State(state): State<AppState>,
     Path(id): Path<u64>,

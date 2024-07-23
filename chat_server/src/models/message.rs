@@ -7,29 +7,35 @@ use crate::{models::ChatFile, AppError, AppState};
 
 use chat_core::Message;
 
+/// 创建Message DTO
 #[derive(Debug, Clone, ToSchema, Serialize, Deserialize)]
 pub struct CreateMessage {
+    /// 内容
     pub content: String,
+    /// 文件列表
     pub files: Vec<String>,
 }
+/// 查询消息的QueryParams
 #[derive(Debug, Clone, IntoParams, ToSchema, Serialize, Deserialize)]
 pub struct ListMessages {
     pub last_id: Option<u64>,
     pub limit: u64,
 }
 
+/// 实现AppState上下文
 impl AppState {
+    /// 创建消息
     pub async fn create_message(
         &self,
         input: CreateMessage,
         chat_id: u64,
         user_id: u64,
     ) -> Result<Message, AppError> {
-        //verify conentent  - not empty
+        // 验证不允许空消息
         if input.content.is_empty() {
             return Err(AppError::CreateMessageError("content is empty".to_string()));
         }
-        //verify files exist
+        // 验证消息携带的文件是否存在
         for s in &input.files {
             let file = ChatFile::from_str(s)?;
             if !file.path(&self.config.server.base_dir).exists() {
@@ -39,7 +45,7 @@ impl AppState {
             }
         }
 
-        // create message
+        // 创建消息
         let message: Message = sqlx::query_as(
             r"
                 INSERT INTO messages (chat_id, sender_id, content, files)
@@ -57,11 +63,13 @@ impl AppState {
         Ok(message)
     }
 
+    /// 查询所有的消息
     pub async fn list_messages(
         &self,
         input: ListMessages,
         chat_id: u64,
     ) -> Result<Vec<Message>, AppError> {
+        // 从最新的开始取
         let last_id = input.last_id.unwrap_or(i64::MAX as _);
         let messages: Vec<Message> = sqlx::query_as(
             r#"

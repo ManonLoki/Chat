@@ -14,6 +14,21 @@ use crate::{
     AppError, AppState, User,
 };
 
+/// 发送消息
+#[utoipa::path(
+    post,
+    path = "/api/chats/{id}/messages",
+    params(
+        ("id" = u64, Path, description = "Chat id"),
+    ),
+    responses(
+        (status = 200, description = "Message Sended", body = Message),
+    ),
+    security(
+        ("token" = [])
+    ),
+    tag = "message"
+)]
 pub(crate) async fn send_message_handler(
     Extension(user): Extension<User>,
     State(state): State<AppState>,
@@ -25,6 +40,7 @@ pub(crate) async fn send_message_handler(
     Ok((StatusCode::CREATED, Json(msg)))
 }
 
+/// 查看消息列表
 #[utoipa::path(
     get,
     path = "/api/chats/{id}/messages",
@@ -39,7 +55,8 @@ pub(crate) async fn send_message_handler(
     ),
     security(
         ("token" = [])
-    )
+    ),
+    tag = "message"
 )]
 pub(crate) async fn list_message_handler(
     State(state): State<AppState>,

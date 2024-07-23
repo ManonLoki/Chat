@@ -8,17 +8,20 @@ use crate::{
     AppError, AppState,
 };
 
+/// 身份认证 DTO
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct AuthOutput {
     token: String,
 }
 
+/// 注册
 #[utoipa::path(
     post,
     path = "/api/signup",
     responses(
-        (status = 200,description = "User created", body=AuthOutput)
-    )
+        (status = 200,description = "Signup User", body=AuthOutput)
+    ),
+    tag = "auth"
 )]
 pub(crate) async fn signup_handler(
     State(state): State<AppState>,
@@ -26,17 +29,18 @@ pub(crate) async fn signup_handler(
 ) -> Result<impl IntoResponse, AppError> {
     let user = state.create_user(&input).await?;
     let token = state.ek.sign(user)?;
-
     let output = AuthOutput { token };
-
     Ok((StatusCode::CREATED, Json(output)).into_response())
 }
+
+/// 登录
 #[utoipa::path(
     post,
     path = "/api/signin",
     responses(
         (status = 200, description = "User signed in", body = AuthOutput),
-    )
+    ),
+    tag="auth"
 )]
 pub(crate) async fn signin_handler(
     State(state): State<AppState>,

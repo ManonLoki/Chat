@@ -7,13 +7,17 @@ use chat_core::User;
 
 use crate::{AppError, AppState};
 
+/// 验证Chats是否为当前用户所拥有
 pub async fn verify_chat(State(state): State<AppState>, req: Request, next: Next) -> Response {
+    // 从路径中获取chat_id
     let (mut parts, body) = req.into_parts();
     let Path(chat_id) = Path::<u64>::from_request_parts(&mut parts, &state)
         .await
         .unwrap();
+
+    // 从请求中获取用户 需要确保verify_token先执行
     let user = parts.extensions.get::<User>().unwrap();
-    // verify if user_id is a member of chat_id
+    // 验证用户是否为chat的成员
     if !state
         .is_chat_member(chat_id, user.id as _)
         .await
@@ -26,6 +30,7 @@ pub async fn verify_chat(State(state): State<AppState>, req: Request, next: Next
         .into_response();
     }
 
+    // 重建请求
     let req = Request::from_parts(parts, body);
 
     next.run(req).await

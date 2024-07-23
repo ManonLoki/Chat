@@ -6,35 +6,45 @@ use crate::{AppError, AppState};
 
 use chat_core::{Chat, ChatType};
 
+/// 创建Chat DTO
 #[derive(Debug, Clone, ToSchema, Default, Serialize, Deserialize)]
 pub struct CreateChat {
+    /// 名称 只有在 Private Channel / Public Channel 时有效
     pub name: Option<String>,
+    /// 成员列表
     pub members: Vec<i64>,
+    /// 是否公开
     pub public: bool,
 }
 
+/// 更新Chat DTO
 #[derive(Debug, Clone, ToSchema, Default, Serialize, Deserialize)]
 pub struct UpdateChat {
+    /// 名称 只有在  Private Channel / Public Channel 时有效
     pub name: Option<String>,
+    /// 成员列表
     pub members: Option<Vec<i64>>,
 }
 
+/// 将操作添加到AppState上下文中
 impl AppState {
+    /// 创建Chat
     pub async fn create_chat(&self, input: CreateChat, ws_id: u64) -> Result<Chat, AppError> {
+        // 获取成员 最少2个
         let len = input.members.len();
         if len < 2 {
             return Err(AppError::CreateChatError(
                 "Chat mut have at latest 2 members".to_string(),
             ));
         }
-
+        // 超过8个成员的群组必须有名称
         if len > 8 && input.name.is_none() {
             return Err(AppError::CreateChatError(
                 "Group chat with more than 8 members must have a name".to_string(),
             ));
         }
 
-        // verify all members exist
+        // 检查所有的用户必须存在
         let users = self.fetch_chat_user_by_ids(&input.members).await?;
         if users.len() != len {
             return Err(AppError::CreateChatError(
@@ -42,9 +52,13 @@ impl AppState {
             ));
         }
 
+        // 获取群组类型
         let chat_type = match (&input.name, len) {
+            // 当没有名字，且只有2个成员时，为1对1
             (None, 2) => ChatType::Single,
+            // 当没有名字 且成员大于2时，为群组
             (None, _) => ChatType::Group,
+            // 当有名字时，根据是否公开判断
             (Some(_name), _) => {
                 if input.public {
                     ChatType::PublicChannel
@@ -71,6 +85,7 @@ impl AppState {
         Ok(chat)
     }
 
+    /// 获取当前工作空间下所有的Chat
     pub async fn fetch_all_chat(&self, ws_id: u64) -> Result<Vec<Chat>, AppError> {
         let chats = sqlx::query_as(
             r#"
@@ -87,6 +102,7 @@ impl AppState {
         Ok(chats)
     }
 
+    // 根据ID获取Chat信息
     pub async fn get_chat_by_id(&self, id: u64) -> Result<Option<Chat>, AppError> {
         let chat = sqlx::query_as(
             r#"
@@ -101,7 +117,7 @@ impl AppState {
 
         Ok(chat)
     }
-
+    // 根据Id更新Chat信息
     pub async fn update_chat_by_id(&self, id: u64, input: UpdateChat) -> Result<(), AppError> {
         // 校验参数是否有效
         if input.name.is_none() && input.members.is_none() {
@@ -110,6 +126,7 @@ impl AppState {
             ));
         }
 
+        // 使用QueryBuilder构建更新语句
         let mut query_builder: QueryBuilder<Postgres> = QueryBuilder::new("UPDATE chats SET ");
         let mut first_field = true;
 
@@ -138,6 +155,7 @@ impl AppState {
         Ok(())
     }
 
+    // 根据Id删除Chat
     pub async fn delete_chat_by_id(&self, id: u64) -> Result<(), AppError> {
         sqlx::query("DELETE FROM chats WHERE id=$1")
             .bind(id as i64)
@@ -147,6 +165,7 @@ impl AppState {
         Ok(())
     }
 
+    // 检测用户是否为Chat成员
     pub async fn is_chat_member(&self, chat_id: u64, user_id: u64) -> Result<bool, AppError> {
         let row = sqlx::query(
             r#"

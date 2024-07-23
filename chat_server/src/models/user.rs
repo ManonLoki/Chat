@@ -11,43 +11,31 @@ use crate::{AppError, AppState};
 
 use chat_core::{ChatUser, User};
 
+/// 注册用户 DTO
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct CreateUser {
+    /// 用户全名
     pub fullname: String,
+    /// Email
     pub email: String,
+    /// 密码 非Hash
     pub password: String,
+    /// 工作空间
     pub workspace: String,
 }
 
-#[cfg(test)]
-impl CreateUser {
-    pub fn new(workspace: &str, fullname: &str, email: &str, password: &str) -> Self {
-        Self {
-            fullname: fullname.to_string(),
-            email: email.to_string(),
-            password: password.to_string(),
-            workspace: workspace.to_string(),
-        }
-    }
-}
-
+/// 登录DTO
 #[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct SigninUser {
+    /// Email
     pub email: String,
+    /// 密码 非Hash
     pub password: String,
 }
 
-#[cfg(test)]
-impl SigninUser {
-    pub fn new(email: &str, password: &str) -> Self {
-        Self {
-            email: email.to_string(),
-            password: password.to_string(),
-        }
-    }
-}
-
+/// 实现AppState上下文
 impl AppState {
+    /// 通过Email查找用户
     pub async fn find_user_by_email(&self, email: &str) -> Result<Option<User>, AppError> {
         let user = sqlx::query_as(
             r#"SELECT id,ws_id,fullname,email,created_at FROM users WHERE email=$1"#,
@@ -58,18 +46,21 @@ impl AppState {
 
         Ok(user)
     }
-    /// Create a new user
+    ///  注册一个新用户
     pub async fn create_user(&self, input: &CreateUser) -> Result<User, AppError> {
+        // 先检查用户是否已存在
         let user = self.find_user_by_email(&input.email).await?;
         if user.is_some() {
             return Err(AppError::EmailAlreadyExists(input.email.clone()));
         }
 
+        // 再检查workspace是否已存在
         let ws = match self.find_workspace_by_name(&input.workspace).await? {
             Some(ws) => ws,
             None => self.create_workspace(&input.workspace, 0).await?,
         };
 
+        // 使用Argon2加密密码
         let password_hash = hash_password(&input.password)?;
         let user: User = sqlx::query_as(
             r#"
@@ -85,6 +76,7 @@ impl AppState {
         .fetch_one(&self.pool)
         .await?;
 
+        // 如果是新建的workspace 则为workspace设置owner
         if ws.owner_id == 0 {
             self.update_workspace_owner(ws.id as u64, user.id as u64)
                 .await?;
@@ -93,8 +85,9 @@ impl AppState {
         Ok(user)
     }
 
-    /// Verify email and password
+    /// 登录验证
     pub async fn verify_user(&self, input: &SigninUser) -> Result<Option<User>, AppError> {
+        // 先查找用户
         let user: Option<User> = sqlx::query_as(
             r#"SELECT id,ws_id,fullname,email,created_at,password_hash FROM users WHERE email=$1"#,
         )
@@ -103,6 +96,7 @@ impl AppState {
         .await?;
 
         match user {
+            // 存在用户则验证密码
             Some(mut user) => {
                 let password_hash = mem::take(&mut user.password_hash);
                 let is_valid =
@@ -117,7 +111,7 @@ impl AppState {
         }
     }
 
-    #[allow(dead_code)]
+    /// 通过ID查找用户
     pub async fn find_user_by_id(&self, id: u64) -> Result<Option<User>, AppError> {
         let user =
             sqlx::query_as(r#"SELECT id,ws_id,fullname,email,created_at FROM users WHERE id=$1"#)
@@ -127,9 +121,8 @@ impl AppState {
 
         Ok(user)
     }
-}
 
-impl AppState {
+    // 根据ws_id获取用户列表
     pub async fn fetch_chat_users(&self, ws_id: u64) -> Result<Vec<ChatUser>, AppError> {
         let users = sqlx::query_as(
             r#"
@@ -145,6 +138,7 @@ impl AppState {
         Ok(users)
     }
 
+    // 根据user_id获取用户列表
     pub async fn fetch_chat_user_by_ids(&self, id: &[i64]) -> Result<Vec<ChatUser>, AppError> {
         let users = sqlx::query_as(
             r#"
@@ -161,9 +155,11 @@ impl AppState {
     }
 }
 
+// 将密码转为Argon2 hash
 fn hash_password(password: &str) -> Result<String, AppError> {
+    // 生成随机Salt
     let salt = SaltString::generate(&mut OsRng);
-
+    // 使用Argon2加密
     let argon2 = Argon2::default();
 
     let password_hash = argon2
@@ -173,15 +169,37 @@ fn hash_password(password: &str) -> Result<String, AppError> {
     Ok(password_hash)
 }
 
+// 验证密码
 fn verify_password(password: &str, password_hash: &str) -> Result<bool, AppError> {
     let argon2 = Argon2::default();
     let password_hash = PasswordHash::new(password_hash)?;
-
     let is_valid = argon2
         .verify_password(password.as_bytes(), &password_hash)
         .is_ok();
 
     Ok(is_valid)
+}
+
+#[cfg(test)]
+impl CreateUser {
+    pub fn new(workspace: &str, fullname: &str, email: &str, password: &str) -> Self {
+        Self {
+            fullname: fullname.to_string(),
+            email: email.to_string(),
+            password: password.to_string(),
+            workspace: workspace.to_string(),
+        }
+    }
+}
+
+#[cfg(test)]
+impl SigninUser {
+    pub fn new(email: &str, password: &str) -> Self {
+        Self {
+            email: email.to_string(),
+            password: password.to_string(),
+        }
+    }
 }
 
 #[cfg(test)]

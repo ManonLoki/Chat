@@ -16,10 +16,13 @@ use crate::{
 
 use crate::handlers::*;
 
+/// OpenAPI Router Trait
+/// 用于附加OpenAPI文档
 pub(crate) trait OpenApiRouter {
     fn openapi(self) -> Self;
 }
 
+// 创建AppDoc结构体
 #[derive(OpenApi)]
 #[openapi(
         paths(
@@ -27,21 +30,24 @@ pub(crate) trait OpenApiRouter {
             signin_handler,
             list_chat_handler,
             create_chat_handler,
+            update_chat_handler,
+            delete_chat_handler,
             get_chat_handler,
+            delete_chat_handler,
             list_message_handler,
+            send_message_handler,
+            list_chat_users_handler
         ),
         components(
             schemas(User, Chat, ChatType, ChatUser, Message, Workspace, SigninUser, CreateUser, CreateChat, CreateMessage, ListMessages, AuthOutput, ErrorOutput),
         ),
         modifiers(&SecurityAddon),
-        tags(
-            (name = "chat", description = "Chat related operations"),
-        )
     )]
 pub(crate) struct ApiDoc;
 
+// 创建鉴权插件
 struct SecurityAddon;
-
+// 实现Modify Trait
 impl Modify for SecurityAddon {
     fn modify(&self, openapi: &mut utoipa::openapi::OpenApi) {
         if let Some(components) = openapi.components.as_mut() {
@@ -53,6 +59,7 @@ impl Modify for SecurityAddon {
     }
 }
 
+/// 为axum::Router实现OpenApiRouter
 impl OpenApiRouter for Router<AppState> {
     fn openapi(self) -> Self {
         self.merge(SwaggerUi::new("/swagger-ui").url("/api-docs/openapi.json", ApiDoc::openapi()))

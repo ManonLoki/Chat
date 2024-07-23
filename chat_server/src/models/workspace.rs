@@ -2,8 +2,9 @@ use crate::{AppError, AppState};
 
 use chat_core::Workspace;
 
+///实现AppState上下文
 impl AppState {
-    /// Create a new workspace
+    /// 创建Workspace
     pub async fn create_workspace(&self, name: &str, owner_id: u64) -> Result<Workspace, AppError> {
         let ws = sqlx::query_as(
             r#"
@@ -19,6 +20,7 @@ impl AppState {
         Ok(ws)
     }
 
+    /// 根据工作空间名称查询Workspace
     pub async fn find_workspace_by_name(&self, name: &str) -> Result<Option<Workspace>, AppError> {
         let ws =
             sqlx::query_as(r#"SELECT id,owner_id,name,created_at FROM workspaces WHERE name=$1"#)
@@ -28,7 +30,8 @@ impl AppState {
 
         Ok(ws)
     }
-    #[allow(dead_code)]
+
+    /// 根据ID查询Workspace
     pub async fn find_workspace_by_id(&self, id: u64) -> Result<Option<Workspace>, AppError> {
         let ws =
             sqlx::query_as(r#"SELECT id,owner_id,name,created_at FROM workspaces WHERE id=$1"#)
@@ -38,7 +41,7 @@ impl AppState {
 
         Ok(ws)
     }
-
+    /// 更新Workspace的所有者
     pub async fn update_workspace_owner(
         &self,
         id: u64,
