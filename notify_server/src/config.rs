@@ -3,16 +3,18 @@ use std::{env, fs::File};
 use anyhow::Result;
 use serde::{Deserialize, Serialize};
 
+/// 应用配置
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AppConfig {
+    /// 服务端配置
     pub server: ServerConfig,
+    /// 鉴权配置
     pub auth: AuthConfig,
 }
 
 impl AppConfig {
     pub fn load() -> Result<Self> {
-        // Reade from /etc/config/notify.yaml or ./notify.yaml or fro env NOTIFY_CONFIG
-
+        // 优先级：当前目录下的 notify.yaml > /etc/config/notify.yaml > 环境变量 NOTIFY_CONFIG 指定的文件
         let ret = match (
             File::open("notify.yaml"),
             File::open("/etc/config/notify.yaml"),
@@ -28,13 +30,18 @@ impl AppConfig {
     }
 }
 
+/// 服务端配置
 #[derive(Debug, Deserialize, Serialize)]
 pub struct ServerConfig {
+    /// 端口
     pub port: u16,
+    /// 数据库链接字符串
     pub db_url: String,
 }
 
+/// 鉴权配置
 #[derive(Debug, Deserialize, Serialize)]
 pub struct AuthConfig {
+    /// JWT 公钥
     pub pk: String,
 }

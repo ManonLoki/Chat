@@ -23,12 +23,17 @@ pub type UserMap = Arc<DashMap<u64, broadcast::Sender<Arc<AppEvent>>>>;
 
 const INDEX_HTML: &str = include_str!("../index.html");
 
+/// 应用状态
 #[derive(Clone)]
 pub struct AppState(Arc<AppStateInner>);
 
+/// 应用状态内部
 pub struct AppStateInner {
+    /// 应用配置
     pub config: AppConfig,
+    /// 用户列表
     pub users: UserMap,
+    /// JWT解码密钥
     dk: DecodingKey,
 }
 
@@ -59,9 +64,11 @@ impl TokenVerify for AppState {
     }
 }
 
+/// 获取路由
 pub async fn get_router(config: AppConfig) -> anyhow::Result<Router> {
     let state = AppState::new(config);
 
+    // 设置PG监听器
     setup_pg_listener(state.clone()).await?;
 
     let router = Router::new()
