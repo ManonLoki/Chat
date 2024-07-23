@@ -18,15 +18,20 @@ use crate::User;
 
 const RQEUST_ID_HEADER: &str = "x-request-id";
 
+/// 验证Token
 pub trait TokenVerify {
+    /// Error 实现 Debug Trait
     type Error: fmt::Debug;
+    /// 验证函数
     fn verify(&self, token: &str) -> Result<User, Self::Error>;
 }
 
+/// 配置Layer
 pub fn set_layer(router: Router) -> Router {
     router.layer(
         ServiceBuilder::new()
             .layer(
+                // 设置TracingLayer
                 TraceLayer::new_for_http()
                     .make_span_with(DefaultMakeSpan::new().include_headers(true))
                     .on_request(DefaultOnRequest::new().level(Level::INFO))
@@ -36,8 +41,11 @@ pub fn set_layer(router: Router) -> Router {
                             .latency_unit(tower_http::LatencyUnit::Micros),
                     ),
             )
+            // 设置 Gzip
             .layer(CompressionLayer::new().gzip(true).br(true).deflate(true))
+            // 设置RequestId
             .layer(from_fn(request_id::set_request_id))
+            // 设置接口执行时间
             .layer(ServerTimeLayer),
     )
 }
