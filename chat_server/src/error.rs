@@ -3,7 +3,14 @@ use axum::response::Json;
 use axum::response::{IntoResponse, Response};
 use jwt_simple::reexports::serde_json::json;
 
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
+use utoipa::ToSchema;
+
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
+pub struct ErrorOutput {
+    pub error: String,
+}
 
 #[derive(Error, Debug)]
 pub enum AppError {
@@ -59,5 +66,13 @@ impl IntoResponse for AppError {
         };
 
         (status, Json(json!({"error":self.to_string()}))).into_response()
+    }
+}
+
+impl ErrorOutput {
+    pub fn new(error: impl Into<String>) -> Self {
+        Self {
+            error: error.into(),
+        }
     }
 }

@@ -5,12 +5,13 @@ use argon2::{
     Argon2, PasswordVerifier,
 };
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::{AppError, AppState};
 
 use chat_core::{ChatUser, User};
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct CreateUser {
     pub fullname: String,
     pub email: String,
@@ -30,7 +31,7 @@ impl CreateUser {
     }
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct SigninUser {
     pub email: String,
     pub password: String,

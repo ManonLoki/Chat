@@ -1,16 +1,25 @@
 use axum::{extract::State, http::StatusCode, response::IntoResponse, Json};
 use serde::{Deserialize, Serialize};
+use utoipa::ToSchema;
 
 use crate::{
+    error::ErrorOutput,
     models::{CreateUser, SigninUser},
     AppError, AppState,
 };
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, ToSchema, Serialize, Deserialize)]
 pub struct AuthOutput {
     token: String,
 }
 
+#[utoipa::path(
+    post,
+    path = "/api/signup",
+    responses(
+        (status = 200,description = "User created", body=AuthOutput)
+    )
+)]
 pub(crate) async fn signup_handler(
     State(state): State<AppState>,
     Json(input): Json<CreateUser>,
@@ -22,7 +31,13 @@ pub(crate) async fn signup_handler(
 
     Ok((StatusCode::CREATED, Json(output)).into_response())
 }
-
+#[utoipa::path(
+    post,
+    path = "/api/signin",
+    responses(
+        (status = 200, description = "User signed in", body = AuthOutput),
+    )
+)]
 pub(crate) async fn signin_handler(
     State(state): State<AppState>,
     Json(input): Json<SigninUser>,
@@ -35,7 +50,10 @@ pub(crate) async fn signin_handler(
 
             Ok((StatusCode::OK, Json(output)).into_response())
         }
-        None => Ok((StatusCode::FORBIDDEN, "Invalid email or password").into_response()),
+        None => {
+            let body = Json(ErrorOutput::new("Invalid email or password"));
+            Ok((StatusCode::FORBIDDEN, body).into_response())
+        }
     }
 }
 

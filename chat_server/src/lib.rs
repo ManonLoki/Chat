@@ -3,6 +3,8 @@ mod error;
 mod handlers;
 mod middlewares;
 mod models;
+mod openapi;
+
 use anyhow::Context;
 use chat_core::{
     middlewares::{set_layer, verify_token, TokenVerify},
@@ -12,6 +14,7 @@ use chat_core::{
 pub use error::AppError;
 use handlers::*;
 use middlewares::verify_chat;
+use openapi::OpenApiRouter;
 use std::{fmt::Debug, ops::Deref, sync::Arc};
 
 use axum::{
@@ -98,6 +101,7 @@ pub async fn get_router(state: AppState) -> Result<Router, AppError> {
         .route("/signup", post(signup_handler));
 
     let app = Router::new()
+        .openapi()
         .route("/", get(index_handler))
         .nest("/api", api)
         .with_state(state);

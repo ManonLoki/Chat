@@ -1,18 +1,19 @@
 use serde::{Deserialize, Serialize};
 use sqlx::{Postgres, QueryBuilder};
+use utoipa::ToSchema;
 
 use crate::{AppError, AppState};
 
 use chat_core::{Chat, ChatType};
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, ToSchema, Default, Serialize, Deserialize)]
 pub struct CreateChat {
     pub name: Option<String>,
     pub members: Vec<i64>,
     pub public: bool,
 }
 
-#[derive(Debug, Clone, Default, Serialize, Deserialize)]
+#[derive(Debug, Clone, ToSchema, Default, Serialize, Deserialize)]
 pub struct UpdateChat {
     pub name: Option<String>,
     pub members: Option<Vec<i64>>,
